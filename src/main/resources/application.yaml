@@ -17,8 +17,7 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  # El User Pool de Cognito contra el que se validan los tokens.
-  # Spring descarga solo las llaves públicas de aquí y verifica la firma de cada JWT.
+
   security:
     oauth2:
       resourceserver:
