@@ -1,8 +1,8 @@
 package com.pucetec.diary.controllers
 
 import com.pucetec.diary.config.SecurityConfig
-import com.pucetec.diary.entities.Entry
-import com.pucetec.diary.mappers.EntryMapper
+import com.pucetec.diary.dto.EntryRequest
+import com.pucetec.diary.dto.EntryResponse
 import com.pucetec.diary.services.EntryService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(EntryController::class)
 @Import(SecurityConfig::class)   // el slice de @WebMvcTest no carga las @Configuration por su cuenta
@@ -28,9 +29,6 @@ class EntryControllerSecurityTest {
 
     @MockitoBean
     lateinit var entryService: EntryService
-
-    @MockitoBean
-    lateinit var entryMapper: EntryMapper
 
     // Fabrica un access_token de Cognito falso: solo nos importa el claim `username`.
     private fun tokenOf(username: String) = jwt().jwt { it.claim("username", username) }
@@ -53,7 +51,6 @@ class EntryControllerSecurityTest {
     @Test
     fun `el service recibe el username del TOKEN, no de un parametro`() {
         whenever(entryService.findMine("ana")).thenReturn(emptyList())
-        whenever(entryMapper.toResponseList(any())).thenReturn(emptyList())
 
         mockMvc.perform(get("/entries").with(tokenOf("ana")))
             .andExpect(status().isOk)
@@ -64,10 +61,8 @@ class EntryControllerSecurityTest {
 
     @Test
     fun `el autor de una entrada nueva sale del TOKEN, aunque el body diga otra cosa`() {
-        val entry = Entry(title = "Martes horrible", body = "...", author = "ana")
-        whenever(entryService.create(any(), any(), any())).thenReturn(entry)
-        whenever(entryMapper.toResponse(any())).thenReturn(
-            com.pucetec.diary.dto.EntryResponse(1, "Martes horrible", "...", "ana", entry.createdAt)
+        whenever(entryService.create(any(), any())).thenReturn(
+            EntryResponse(1, "Martes horrible", "...", "ana", LocalDateTime.now())
         )
 
         mockMvc.perform(
@@ -78,6 +73,7 @@ class EntryControllerSecurityTest {
                 .content("""{"title":"Martes horrible","body":"...","author":"beto"}""")
         ).andExpect(status().isCreated)
 
-        verify(entryService).create("Martes horrible", "...", "ana")
+        // El request llega con title y body encapsulados; el author, aparte y sacado del JWT.
+        verify(entryService).create(EntryRequest("Martes horrible", "..."), "ana")
     }
 }

@@ -2,7 +2,6 @@ package com.pucetec.diary.controllers
 
 import com.pucetec.diary.dto.EntryRequest
 import com.pucetec.diary.dto.EntryResponse
-import com.pucetec.diary.mappers.EntryMapper
 import com.pucetec.diary.services.EntryService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -28,14 +27,11 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/entries")
-class EntryController(
-    private val entryService: EntryService,
-    private val entryMapper: EntryMapper
-) {
+class EntryController(private val entryService: EntryService) {
 
     @GetMapping
     fun mine(@AuthenticationPrincipal jwt: Jwt): List<EntryResponse> =
-        entryMapper.toResponseList(entryService.findMine(jwt.username()))
+        entryService.findMine(jwt.username())
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -43,14 +39,14 @@ class EntryController(
         @RequestBody request: EntryRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): EntryResponse =
-        entryMapper.toResponse(entryService.create(request.title, request.body, jwt.username()))
+        entryService.create(request, jwt.username())
 
     @GetMapping("/{id}")
     fun one(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): EntryResponse =
-        entryMapper.toResponse(entryService.findOne(id, jwt.username()))
+        entryService.findOne(id, jwt.username())
 
     @PutMapping("/{id}")
     fun update(
@@ -58,7 +54,7 @@ class EntryController(
         @RequestBody request: EntryRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): EntryResponse =
-        entryMapper.toResponse(entryService.update(id, request.title, request.body, jwt.username()))
+        entryService.update(id, request, jwt.username())
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

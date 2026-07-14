@@ -1,32 +1,40 @@
 package com.pucetec.diary.services
 
+import com.pucetec.diary.dto.EntryRequest
+import com.pucetec.diary.dto.EntryResponse
 import com.pucetec.diary.entities.Entry
 import com.pucetec.diary.exceptions.EntryNotFoundException
 import com.pucetec.diary.exceptions.NotYourEntryException
+import com.pucetec.diary.mappers.EntryMapper
 import com.pucetec.diary.repositories.EntryRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class EntryService(private val entryRepository: EntryRepository) {
+class EntryService(
+    private val entryRepository: EntryRepository,
+    private val entryMapper: EntryMapper
+) {
 
     private val logger = LoggerFactory.getLogger(EntryService::class.java)
 
-    fun findMine(author: String): List<Entry> =
-        entryRepository.findByAuthorOrderByCreatedAtDesc(author)
+    fun findMine(author: String): List<EntryResponse> =
+        entryMapper.toResponseList(entryRepository.findByAuthorOrderByCreatedAtDesc(author))
 
-    fun create(title: String, body: String, author: String): Entry {
+    fun create(request: EntryRequest, author: String): EntryResponse {
         logger.info("$author escribió una entrada nueva")
-        return entryRepository.save(Entry(title = title, body = body, author = author))
+        val entry = entryRepository.save(entryMapper.toEntity(request, author))
+        return entryMapper.toResponse(entry)
     }
 
-    fun findOne(id: Long, author: String): Entry = findMineOrThrow(id, author)
+    fun findOne(id: Long, author: String): EntryResponse =
+        entryMapper.toResponse(findMineOrThrow(id, author))
 
-    fun update(id: Long, title: String, body: String, author: String): Entry {
+    fun update(id: Long, request: EntryRequest, author: String): EntryResponse {
         val entry = findMineOrThrow(id, author)
-        entry.title = title
-        entry.body = body
-        return entryRepository.save(entry)
+        entry.title = request.title
+        entry.body = request.body
+        return entryMapper.toResponse(entryRepository.save(entry))
     }
 
     fun delete(id: Long, author: String) {

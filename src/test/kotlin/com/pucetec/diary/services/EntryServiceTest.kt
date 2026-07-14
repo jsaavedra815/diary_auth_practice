@@ -1,8 +1,10 @@
 package com.pucetec.diary.services
 
+import com.pucetec.diary.dto.EntryRequest
 import com.pucetec.diary.entities.Entry
 import com.pucetec.diary.exceptions.EntryNotFoundException
 import com.pucetec.diary.exceptions.NotYourEntryException
+import com.pucetec.diary.mappers.EntryMapper
 import com.pucetec.diary.repositories.EntryRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -23,7 +25,8 @@ class EntryServiceTest {
     @BeforeEach
     fun setUp() {
         entryRepository = mock()
-        entryService = EntryService(entryRepository)
+        // El mapper es puro: usarlo de verdad prueba también que el service responde DTOs.
+        entryService = EntryService(entryRepository, EntryMapper())
     }
 
     private fun entradaDeAna() = Entry(title = "Martes horrible", body = "...", author = "ana", id = 1)
@@ -47,7 +50,7 @@ class EntryServiceTest {
     fun `crear una entrada la firma con el autor recibido`() {
         whenever(entryRepository.save(any<Entry>())).thenAnswer { it.arguments[0] as Entry }
 
-        val entrada = entryService.create("Martes horrible", "...", "ana")
+        val entrada = entryService.create(EntryRequest("Martes horrible", "..."), "ana")
 
         assertEquals("ana", entrada.author)
         assertEquals("Martes horrible", entrada.title)
@@ -67,7 +70,7 @@ class EntryServiceTest {
         whenever(entryRepository.findById(1)).thenReturn(Optional.of(entradaDeAna()))
         whenever(entryRepository.save(any<Entry>())).thenAnswer { it.arguments[0] as Entry }
 
-        val entrada = entryService.update(1, "Martes mejor", "ya pasó", "ana")
+        val entrada = entryService.update(1, EntryRequest("Martes mejor", "ya pasó"), "ana")
 
         assertEquals("Martes mejor", entrada.title)
         assertEquals("ya pasó", entrada.body)
@@ -100,7 +103,7 @@ class EntryServiceTest {
         whenever(entryRepository.findById(1)).thenReturn(Optional.of(entradaDeAna()))
 
         assertThrows(NotYourEntryException::class.java) {
-            entryService.update(1, "hackeada", "jaja", "beto")
+            entryService.update(1, EntryRequest("hackeada", "jaja"), "beto")
         }
         verify(entryRepository, never()).save(any<Entry>())
     }
