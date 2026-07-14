@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: diary
+
+  datasource:
+    url: jdbc:h2:mem:diarydb
+    driver-class-name: org.h2.Driver
+    username: admin
+    password: admin
+
+  h2:
+    console:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  # 👇 CHECKPOINT 3 — descomentar junto con el SecurityConfig.
+  #    Es el User Pool de Cognito contra el que se validan los tokens.
+  # security:
+  #   oauth2:
+  #     resourceserver:
+  #       jwt:
+  #         issuer-uri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_yzwNALI2A
+
+server:
+  port: 8787
