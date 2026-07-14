@@ -17,13 +17,13 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  # 👇 CHECKPOINT 3 — descomentar junto con el SecurityConfig.
-  #    Es el User Pool de Cognito contra el que se validan los tokens.
-  # security:
-  #   oauth2:
-  #     resourceserver:
-  #       jwt:
-  #         issuer-uri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_yzwNALI2A
+  # El User Pool de Cognito contra el que se validan los tokens.
+  # Spring descarga solo las llaves públicas de aquí y verifica la firma de cada JWT.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_yzwNALI2A
 
 server:
   port: 8787

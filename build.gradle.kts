@@ -27,17 +27,19 @@ dependencies {
 	implementation("tools.jackson.module:jackson-module-kotlin")
 	runtimeOnly("com.h2database:h2")
 
-	// 👇 CHECKPOINT 2 — descomentar en vivo. Apenas esta dependencia entra al classpath,
-	//    Spring Security cierra TODO por defecto y hasta el endpoint más tonto devuelve 401.
-	// implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
+	// 👇 CHECKPOINT 2 — apenas esta dependencia entra al classpath, Spring Security
+	//    cierra TODO por defecto y hasta el endpoint más tonto devuelve 401.
+	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+	testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-	// 👇 CHECKPOINT 7 — para fabricar JWTs falsos con jwt() en los tests
-	// testImplementation("org.springframework.security:spring-security-test")
+	// 👇 para fabricar JWTs falsos con jwt() en los tests, sin depender de AWS
+	testImplementation("org.springframework.security:spring-security-test")
 }
 
 kotlin {

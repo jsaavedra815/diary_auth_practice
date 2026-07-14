@@ -5,6 +5,8 @@ import com.pucetec.diary.dto.EntryResponse
 import com.pucetec.diary.mappers.EntryMapper
 import com.pucetec.diary.services.EntryService
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -12,21 +14,17 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * ⚠️ VERSIÓN 1 — CHECKPOINT 1. Tiene un agujero enorme, y es a propósito.
+ * CHECKPOINT 3 — el `?author=` desapareció de todos los endpoints.
  *
- * El autor viene por `?author=`, o sea que el CLIENTE está afirmando quién es.
- * Una afirmación del cliente no vale nada: basta con escribir el nombre de otro
- * en la URL para leerle el diario.
+ * `GET /entries` ya no recibe NINGÚN parámetro (ni query, ni path, ni body) y aun así
+ * sabe perfectamente qué entradas devolver. Ese endpoint es imposible de abusar: no hay
+ * nada que manipular, no existe un lugar donde escribir el nombre de otro.
  *
- *     GET /entries?author=beto   →  200  😱
- *
- * En el Checkpoint 3 el `?author=` desaparece de todos los endpoints y el "yo"
- * pasa a decidirlo el JWT.
+ * La mejor forma de prevenir un bug es borrar el lugar donde el bug podía existir.
  */
 @RestController
 @RequestMapping("/entries")
@@ -36,36 +34,45 @@ class EntryController(
 ) {
 
     @GetMapping
-    fun mine(@RequestParam author: String): List<EntryResponse> =
-        entryMapper.toResponseList(entryService.findMine(author))
+    fun mine(@AuthenticationPrincipal jwt: Jwt): List<EntryResponse> =
+        entryMapper.toResponseList(entryService.findMine(jwt.username()))
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
         @RequestBody request: EntryRequest,
-        @RequestParam author: String
+        @AuthenticationPrincipal jwt: Jwt
     ): EntryResponse =
-        entryMapper.toResponse(entryService.create(request.title, request.body, author))
+        entryMapper.toResponse(entryService.create(request.title, request.body, jwt.username()))
 
     @GetMapping("/{id}")
     fun one(
         @PathVariable id: Long,
-        @RequestParam author: String
+        @AuthenticationPrincipal jwt: Jwt
     ): EntryResponse =
-        entryMapper.toResponse(entryService.findOne(id, author))
+        entryMapper.toResponse(entryService.findOne(id, jwt.username()))
 
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
         @RequestBody request: EntryRequest,
-        @RequestParam author: String
+        @AuthenticationPrincipal jwt: Jwt
     ): EntryResponse =
-        entryMapper.toResponse(entryService.update(id, request.title, request.body, author))
+        entryMapper.toResponse(entryService.update(id, request.title, request.body, jwt.username()))
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
         @PathVariable id: Long,
-        @RequestParam author: String
-    ) = entryService.delete(id, author)
+        @AuthenticationPrincipal jwt: Jwt
+    ) = entryService.delete(id, jwt.username())
+
+    /**
+     * LA LÍNEA. Aquí se decide quién eres, en toda la aplicación.
+     *
+     * El JWT ya viene verificado por Spring Security (firma, emisor, expiración).
+     * `username` es un claim del access_token de Cognito, y no se puede falsificar
+     * sin la llave privada de AWS.
+     */
+    private fun Jwt.username(): String = getClaimAsString("username")
 }
